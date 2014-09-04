@@ -1,0 +1,15 @@
+voice {
+    name 'dfki-pavoque-neutral'
+    language 'de'
+    gender 'male'
+    type 'unit selection'
+    description 'temporary'
+    samplingRate 16000
+    wantsToBeDefault 20
+}
+
+license {
+    name 'temporary'
+    shortName 'temporary'
+    url 'temporary'
+}
