@@ -1,6 +1,8 @@
 voice {
     name = 'dfki-pavoque-neutral'
-    language = 'de'
+    locale {
+        language = 'de'
+    }
     gender = 'male'
     type = 'unit selection'
     description = 'A male German unit selection voice'
