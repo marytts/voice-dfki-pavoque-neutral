@@ -19,8 +19,6 @@ $ sudo apt-get install default-jdk praat sox speech-tools
 ```
 accordingly.
 
-You will also need to have SSH configured to access **cloudark**.
-
 ### Initializing the build
 
 Do
