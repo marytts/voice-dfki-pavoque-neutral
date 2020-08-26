@@ -8,13 +8,14 @@ buildscript {
 }
 
 plugins {
-    id 'de.dfki.mary.voicebuilding-legacy' version '5.2.2'
+    id 'de.dfki.mary.voicebuilding-legacy' version '5.5-SNAPSHOT'
     id 'de.undercouch.download' version '3.1.0'
 }
 
 group 'de.dfki.mary'
 version '5.3-SNAPSHOT'
 
+marytts {
 voice {
     name = 'dfki-pavoque-neutral'
     language = 'de'
@@ -27,6 +28,7 @@ voice {
         url = 'http://mary.dfki.de/download/by-nd-3.0.html'
     }
     samplingRate = 16000
+}
 }
 
 ext {
@@ -53,20 +55,21 @@ task downloadData(type: Download) {
 
 task extractLab {
     dependsOn downloadData
-    def destDir = file("$buildDir/lab")
+    ext.destDir = file("$buildDir/lab")
     inputs.file yamlFile
     outputs.dir destDir
     doFirst {
         destDir.mkdirs()
     }
     doLast {
-        def mapping = ['H#': '_']
         new Yaml().load(yamlFile.newReader()).each { utterance ->
             if (utterance.segments) {
                 file("$destDir/${utterance.prompt}.lab").withWriter { writer ->
                     writer.println '#'
+                    def end = 0.0
                     utterance.segments.each { segment ->
-                        writer.println "$segment.end 125 ${mapping[segment.lab] ?: segment.lab}"
+                        end = segment.end
+                        writer.println "${end.round(6)} 125 $segment.lab"
                     }
                 }
             }
@@ -76,7 +79,7 @@ task extractLab {
 
 task extractText {
     dependsOn downloadData
-    def destDir = file("$buildDir/text")
+    ext.destDir = file("$buildDir/text")
     inputs.file yamlFile
     outputs.dir destDir
     doFirst {
@@ -107,56 +110,29 @@ task extractWav {
                 exec {
                     commandLine 'sox', flacFile, "$destDir/${utterance.prompt}.wav",
                             'trim', utterance.start, "=$utterance.end",
-                            'rate', voice.samplingRate
+                            'rate', marytts.voice.samplingRate
                 }
             }
         }
     }
 }
 
-legacyInit {
-    dependsOn extractLab, extractText, extractWav
-    def basenameListFile = file("$buildDir/basenames.lst")
-    outputs.files basenameListFile
-    doLast {
-        basenameListFile.withWriter { basenameList ->
-            fileTree(wav.destDir).collect {
-                it.name - '.wav'
-            }.minus([
-                    'a0181',
-                    'a0215',
-                    'a0225',
-                    'a0385',
-                    'a0401',
-                    'a0425',
-                    'a0544',
-                    'a0718',
-                    'a0923',
-                    'a1095',
-                    'a1332',
-                    'a1590',
-                    'e0078',
-                    'e0101',
-                    'e0197',
-                    'e0268',
-                    'e0529',
-                    'e0569',
-                    'e0795',
-                    'e0858',
-                    'e0928',
-                    'e0959',
-                    'e0966',
-                    'e1094',
-                    'e1113',
-                    'e1137',
-                    'e1149',
-                    'e1175',
-                    'e1269',
-                    'e1282',
-                    'e1301'
-            ]).each {
-                basenameList.writeLine it
-            }
-        }
+basenames {
+    dependsOn "extractWav", "extractText", "extractLab"
+    wavDir = extractWav.destDir
+    textDir = extractText.destDir
+    labDir = extractLab.destDir
+    include '*'
+    exclude "w0158"
+}
+
+/*
+generateVoiceConfig {
+    afterEvaluate {
+        config << [
+                targetCostWeights: "jar:/marytts/voice/$voice.nameCamelCase/customTargetCostWeights.txt",
+                joinCostWeights  : "jar:/marytts/voice/$voice.nameCamelCase/customJoinCostWeights.txt",
+        ]
     }
 }
+*/
